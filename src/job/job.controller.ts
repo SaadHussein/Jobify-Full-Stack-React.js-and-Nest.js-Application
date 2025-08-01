@@ -6,66 +6,71 @@ import {
   Patch,
   Param,
   Delete,
-  Res,
-  NotFoundException,
-  UseFilters,
   HttpCode,
   HttpStatus,
+  Req,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
-import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
+import { Job } from './schemas/job.schema';
+import { ObjectIdValidationPipe } from 'src/common/pipes/objectid.pipe';
+import { Request } from 'express';
+import { JobOwnershipGuard } from 'src/common/guards/job-ownership.guard';
 
 @Controller('job')
-@UseFilters(AllExceptionsFilter)
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createJobDto: CreateJobDto) {
-    const job = this.jobService.create(createJobDto);
-    return {
-      message: 'Job created successfully',
-      data: job,
-    };
+  async create(
+    @Req() req: Request,
+    @Body() createJobDto: CreateJobDto,
+  ): Promise<Job> {
+    const user = req.user;
+
+    if (!user || !user.sub) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    return await this.jobService.create(createJobDto, user.sub);
   }
 
   @Get()
-  async findAll() {
-    const jobs = this.jobService.findAll();
+  @HttpCode(HttpStatus.OK)
+  async findAll(@Req() req: Request): Promise<Job[]> {
+    const user = req.user;
 
-    if (!jobs || jobs.length === 0) {
-      throw new NotFoundException('No jobs found');
+    if (!user || !user.sub) {
+      throw new UnauthorizedException('User not authenticated');
     }
-
-    return {
-      message: 'Jobs retrieved successfully',
-      data: jobs,
-    };
+    return await this.jobService.findAll(user.sub);
   }
 
+  @UseGuards(JobOwnershipGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    const job = this.jobService.findOne(id);
-    return {
-      message: 'Job retrieved successfully',
-      data: job,
-    };
+  @HttpCode(HttpStatus.OK)
+  async findOne(@Param('id', ObjectIdValidationPipe) id: string): Promise<Job> {
+    return await this.jobService.findOne(id);
   }
 
+  @UseGuards(JobOwnershipGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateJobDto: UpdateJobDto) {
-    const job = this.jobService.update(id, updateJobDto);
-    if (!job) throw new NotFoundException(`No job found with id: ${id}`);
-    return job;
+  @HttpCode(HttpStatus.OK)
+  async update(
+    @Param('id', ObjectIdValidationPipe) id: string,
+    @Body() updateJobDto: UpdateJobDto,
+  ): Promise<Job> {
+    return await this.jobService.update(id, updateJobDto);
   }
 
+  @UseGuards(JobOwnershipGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    const job = this.jobService.remove(id);
-    if (!job) throw new NotFoundException(`No job found with id: ${id}`);
-    return { message: 'Job deleted successfully' };
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id', ObjectIdValidationPipe) id: string) {
+    return await this.jobService.remove(id);
   }
 }

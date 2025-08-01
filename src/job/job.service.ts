@@ -1,48 +1,88 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
-import { nanoid } from 'nanoid';
+import { InjectModel } from '@nestjs/mongoose';
+import { Job, JobDocument } from './schemas/job.schema';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class JobService {
-  private jobs = [
-    { id: nanoid(), company: 'apple', position: 'front-end' },
-    { id: nanoid(), company: 'google', position: 'back-end' },
-  ];
+  constructor(@InjectModel(Job.name) private jobModel: Model<JobDocument>) {}
 
-  create(createJobDto: CreateJobDto) {
-    const newJob = {
-      id: nanoid(),
-      ...createJobDto,
-    };
-    this.jobs.push(newJob);
-    return newJob;
-  }
-
-  findAll() {
-    return this.jobs;
-  }
-
-  findOne(id: string) {
-    const job = this.jobs.find((job) => job.id === id);
-    if (!job) {
-      throw new NotFoundException(`Job with ID '${id}' not found`);
+  async create(createJobDto: CreateJobDto, userId: string): Promise<Job> {
+    try {
+      return await this.jobModel.create({ ...createJobDto, createdBy: userId });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to create job');
     }
-    return job;
   }
 
-  update(id: string, updateJobDto: UpdateJobDto) {
-    const index = this.jobs.findIndex((job) => job.id === id);
-    if (index === -1) return null;
-    this.jobs[index] = { ...this.jobs[index], ...updateJobDto };
-    return this.jobs[index];
+  async findAll(userId: string): Promise<Job[]> {
+    try {
+      return await this.jobModel.find({ createdBy: userId });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to retrieve jobs');
+    }
   }
 
-  remove(id: string) {
-    const index = this.jobs.findIndex((job) => job.id === id);
-    if (index === -1) return null;
-    const job = this.jobs[index];
-    this.jobs.splice(index, 1);
-    return job;
+  async findOne(id: string): Promise<Job> {
+    try {
+      const job = await this.jobModel.findById(id);
+      if (!job) {
+        throw new NotFoundException(`No job found with id: ${id}`);
+      }
+      return job;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to retrieve job');
+    }
+  }
+
+  async update(id: string, updateJobDto: UpdateJobDto): Promise<Job> {
+    try {
+      const job = await this.jobModel.findByIdAndUpdate(id, updateJobDto, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!job) {
+        console.log('Hiiiii Saaad');
+        throw new NotFoundException(`No job found with id: ${id}`);
+      }
+
+      return job;
+    } catch (error) {
+      console.error('Error updating job:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to update job');
+    }
+  }
+
+  async remove(id: string) {
+    try {
+      const job = await this.jobModel.findByIdAndDelete(id);
+      if (!job) {
+        throw new NotFoundException(`No job found with id: ${id}`);
+      }
+      return { message: 'Job deleted successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to delete job');
+    }
   }
 }
