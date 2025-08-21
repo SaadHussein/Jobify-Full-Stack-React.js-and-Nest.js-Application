@@ -82,6 +82,7 @@ export class AuthService {
   }
 
   logout(res: Response) {
+    res.clearCookie('token');
     res.cookie('token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

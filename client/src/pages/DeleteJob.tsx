@@ -2,19 +2,23 @@ import { redirect, type ActionFunctionArgs } from 'react-router-dom';
 import customFetch from '../utils/customFetch';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import type { QueryClient } from '@tanstack/react-query';
 
-export async function action({ params }: ActionFunctionArgs) {
-  try {
-    await customFetch.delete(`/job/${params.id}`);
-    toast.success('Job deleted successfully');
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      toast.error(error?.response?.data?.message || 'Failed to delete job');
+export const action =
+  (queryClient: QueryClient) =>
+  async ({ params }: ActionFunctionArgs) => {
+    try {
+      await customFetch.delete(`/job/${params.id}`);
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      toast.success('Job deleted successfully');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast.error(error?.response?.data?.message || 'Failed to delete job');
+        return error;
+      }
+
+      toast.error('Something went wrong');
       return error;
     }
-
-    toast.error('Something went wrong');
-    return error;
-  }
-  return redirect('/dashboard/all-jobs');
-}
+    return redirect('/dashboard/all-jobs');
+  };

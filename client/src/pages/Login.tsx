@@ -12,42 +12,46 @@ import customFetch from '../utils/customFetch';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import SubmitBtn from '../components/SubmitBtn';
+import type { QueryClient } from '@tanstack/react-query';
 
 type ActionErrors = {
   msg: string;
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const data = Object.fromEntries(formData);
+export const action =
+  (queryClient: QueryClient) =>
+  async ({ request }: ActionFunctionArgs) => {
+    const formData = await request.formData();
+    const data = Object.fromEntries(formData);
 
-  const errors: ActionErrors = { msg: '' };
-  if ((data.password as string).length < 3) {
-    errors.msg = 'password too short';
-    return errors;
-  }
-
-  try {
-    await customFetch.post('/auth/login', data);
-    toast.success('Login successful');
-    return redirect('/dashboard');
-  } catch (error) {
-    // if (axios.isAxiosError(error)) {
-    //   toast.error(error.response?.data?.message || 'Something went wrong');
-    //   return error;
-    // }
-    // toast.error('Unexpected error');
-    // return error;
-
-    if (axios.isAxiosError(error)) {
-      errors.msg = error?.response?.data?.message || 'Something went wrong';
+    const errors: ActionErrors = { msg: '' };
+    if ((data.password as string).length < 3) {
+      errors.msg = 'password too short';
       return errors;
     }
 
-    errors.msg = 'Unexpected error';
-    return errors;
-  }
-};
+    try {
+      await customFetch.post('/auth/login', data);
+      queryClient.invalidateQueries();
+      toast.success('Login successful');
+      return redirect('/dashboard');
+    } catch (error) {
+      // if (axios.isAxiosError(error)) {
+      //   toast.error(error.response?.data?.message || 'Something went wrong');
+      //   return error;
+      // }
+      // toast.error('Unexpected error');
+      // return error;
+
+      if (axios.isAxiosError(error)) {
+        errors.msg = error?.response?.data?.message || 'Something went wrong';
+        return errors;
+      }
+
+      errors.msg = 'Unexpected error';
+      return errors;
+    }
+  };
 
 const Login = () => {
   const errors = useActionData() as ActionErrors | null;

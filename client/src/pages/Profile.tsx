@@ -7,6 +7,7 @@ import type { User } from './DashboardLayout';
 import Wrapper from '../assets/wrappers/DashboardFormPage';
 import axios from 'axios';
 import SubmitBtn from '../components/SubmitBtn';
+import type { QueryClient } from '@tanstack/react-query';
 
 const Profile = () => {
   const { user } = useOutletContext() as { user: User };
@@ -46,26 +47,31 @@ const Profile = () => {
   );
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
+export const action =
+  (queryClient: QueryClient) =>
+  async ({ request }: ActionFunctionArgs) => {
+    const formData = await request.formData();
 
-  const file = formData.get('avatar');
-  if (file instanceof File && file.size > 500000) {
-    toast.error('Image size too large');
-    return null;
-  }
-
-  try {
-    await customFetch.patch('/user/update-user', formData);
-    toast.success('Profile updated successfully');
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      toast.error(error?.response?.data?.message || 'Failed to update profile');
+    const file = formData.get('avatar');
+    if (file instanceof File && file.size > 500000) {
+      toast.error('Image size too large');
+      return null;
     }
 
-    toast.error('Something went wrong');
-  }
-  return null;
-};
+    try {
+      await customFetch.patch('/user/update-user', formData);
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast.error(
+          error?.response?.data?.message || 'Failed to update profile',
+        );
+      }
+
+      toast.error('Something went wrong');
+    }
+    return null;
+  };
 
 export default Profile;

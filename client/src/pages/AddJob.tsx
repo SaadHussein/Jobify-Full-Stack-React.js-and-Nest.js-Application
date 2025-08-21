@@ -13,6 +13,7 @@ import customFetch from '../utils/customFetch';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import SubmitBtn from '../components/SubmitBtn';
+import type { QueryClient } from '@tanstack/react-query';
 
 const AddJob = () => {
   const { user } = useOutletContext() as { user: User };
@@ -52,21 +53,24 @@ const AddJob = () => {
 };
 export default AddJob;
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const data = Object.fromEntries(formData);
+export const action =
+  (queryClient: QueryClient) =>
+  async ({ request }: ActionFunctionArgs) => {
+    const formData = await request.formData();
+    const data = Object.fromEntries(formData);
 
-  try {
-    await customFetch.post('/job', data);
-    toast.success('Job added successfully');
-    return redirect('all-jobs');
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      toast.error(error?.response?.data?.message || 'Something went wrong');
+    try {
+      await customFetch.post('/job', data);
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      toast.success('Job added successfully');
+      return redirect('all-jobs');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast.error(error?.response?.data?.message || 'Something went wrong');
+        return error;
+      }
+
+      toast.error('Unexpected error');
       return error;
     }
-
-    toast.error('Unexpected error');
-    return error;
-  }
-};
+  };

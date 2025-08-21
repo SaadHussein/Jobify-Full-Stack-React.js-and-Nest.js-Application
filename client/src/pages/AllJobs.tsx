@@ -5,6 +5,7 @@ import axios from 'axios';
 import SearchContainer from '../components/SearchContainer';
 import JobsContainer from '../components/JobsContainer';
 import { createContext, useContext } from 'react';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 
 export type JobStatus = 'interview' | 'declined' | 'pending';
 export type JobType = 'full-time' | 'part-time' | 'internship';
@@ -33,13 +34,54 @@ export interface FindAllJobsResponse {
   jobs: Job[];
 }
 
+const allJobsQuery = (params: {
+  search?: string;
+  jobStatus?: JobStatus;
+  jobType?: JobType;
+  sort?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const { search, jobStatus, jobType, sort, page, limit } = params;
+  return {
+    queryKey: [
+      'jobs',
+      search ?? '',
+      jobStatus ?? 'all',
+      jobType ?? 'all',
+      sort ?? 'newest',
+      page ?? 1,
+      limit ?? 10,
+    ],
+    queryFn: async () => {
+      try {
+        console.log('بجرب تيست');
+
+        const { data } = await customFetch.get('/job', {
+          params,
+        });
+
+        return data;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          toast.error(error.response?.data?.message || 'Failed to fetch jobs');
+          return error;
+        }
+
+        toast.error('Unexpected error');
+        return error;
+      }
+    },
+  };
+};
+
 const AllJobsContext = createContext<AllJobsContextType | undefined>(undefined);
 
 const AllJobs = () => {
-  const { data, searchValues } = useLoaderData() as {
-    data: FindAllJobsResponse;
+  const { searchValues } = useLoaderData() as {
     searchValues: Record<string, string>;
   };
+  const { data } = useQuery(allJobsQuery(searchValues));
 
   return (
     <AllJobsContext.Provider value={{ data, searchValues }}>
@@ -57,28 +99,13 @@ export const useAllJobsContext = () => {
   return context;
 };
 
-export const loader = async ({ request }: ActionFunctionArgs) => {
-  try {
-    console.log('بجرب تيست');
+export const loader =
+  (queryClient: QueryClient) =>
+  async ({ request }: ActionFunctionArgs) => {
     const params = Object.fromEntries([
       ...new URL(request.url).searchParams.entries(),
     ]);
 
-    const { data } = await customFetch.get('/job', {
-      params,
-    });
-
-    return {
-      data,
-      searchValues: { ...params },
-    };
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      toast.error(error.response?.data?.message || 'Failed to fetch jobs');
-      return error;
-    }
-
-    toast.error('Unexpected error');
-    return error;
-  }
-};
+    await queryClient.ensureQueryData(allJobsQuery(params));
+    return { searchValues: { ...params } };
+  };

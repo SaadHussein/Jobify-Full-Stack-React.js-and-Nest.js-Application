@@ -25,7 +25,8 @@ import { join } from 'path';
       }),
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
+      rootPath: join(__dirname, '..', 'client', 'dist'), // مكان build بتاع React/Vue/Angular
+      exclude: [],
     }),
     JobModule,
     AuthModule,

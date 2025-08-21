@@ -47,7 +47,7 @@ export class UserService {
     let avatarPublicId: string | undefined;
 
     if (file) {
-      const uploadResult = await this.cloudinaryService.uploadImage(file.path);
+      const uploadResult = await this.cloudinaryService.uploadImage(file);
       avatarUrl = uploadResult.secure_url;
       avatarPublicId = uploadResult.public_id;
     }
