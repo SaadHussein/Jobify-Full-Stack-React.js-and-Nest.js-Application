@@ -24,7 +24,6 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.use(helmet());
-  app.use(mongoSanitize());
 
   app.enableCors({
     origin: true,

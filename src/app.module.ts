@@ -11,6 +11,7 @@ import { AuthGuard } from './common/guards/auth.guard';
 import { UserModule } from './user/user.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { SanitizeMiddleware } from './common/middleware/mongoSanitize.middleware';
 
 @Module({
   imports: [
@@ -44,5 +45,6 @@ import { join } from 'path';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(LoggerMiddleware).forRoutes('*');
+    consumer.apply(SanitizeMiddleware).forRoutes('*');
   }
 }
