@@ -2,12 +2,14 @@ const FormRow = ({
   type,
   name,
   labelText,
-  defaultValue = "",
+  defaultValue = '',
+  onChange,
 }: {
   type: string;
   name: string;
   labelText?: string;
   defaultValue?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) => {
   return (
     <div className="form-row">
@@ -21,6 +23,7 @@ const FormRow = ({
         className="form-input"
         defaultValue={defaultValue}
         required
+        onChange={onChange}
       />
     </div>
   );

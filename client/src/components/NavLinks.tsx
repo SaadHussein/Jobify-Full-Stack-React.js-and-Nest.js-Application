@@ -1,6 +1,6 @@
-import { useDashboardContext } from "../pages/DashboardLayout";
-import links from "../utils/links";
-import { NavLink } from "react-router-dom";
+import { useDashboardContext } from '../pages/DashboardLayout';
+import links from '../utils/links';
+import { NavLink } from 'react-router-dom';
 
 const NavLinks = ({ isBigSidebar }: { isBigSidebar: boolean }) => {
   const { user, toggleSidebar } = useDashboardContext();
@@ -9,6 +9,8 @@ const NavLinks = ({ isBigSidebar }: { isBigSidebar: boolean }) => {
     <div className="nav-links">
       {links.map((link) => {
         const { text, path, icon } = link;
+        const { role } = user;
+        if (role !== 'admin' && path === 'admin') return;
         return (
           <NavLink
             to={path}

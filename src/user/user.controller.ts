@@ -7,7 +7,9 @@ import {
   Patch,
   Req,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Request } from 'express';
@@ -16,6 +18,11 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { User } from 'src/auth/schemas/user.schema';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
+import { Multer } from 'multer';
+import { multerConfig } from 'src/common/config/multer.config';
+import { TestUserGuard } from 'src/common/guards/test-user.guard';
 
 @Controller('user')
 export class UserController {
@@ -42,9 +49,12 @@ export class UserController {
   }
 
   @Patch('update-user')
+  @UseInterceptors(FileInterceptor('avatar', multerConfig))
   @HttpCode(HttpStatus.OK)
+  @UseGuards(TestUserGuard)
   async updateUser(
     @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: Request,
   ): Promise<User> {
     const user = req.user;
@@ -56,6 +66,7 @@ export class UserController {
     const updatedUser = await this.userService.updateUser(
       user.sub,
       updateUserDto,
+      file,
     );
     return updatedUser;
   }

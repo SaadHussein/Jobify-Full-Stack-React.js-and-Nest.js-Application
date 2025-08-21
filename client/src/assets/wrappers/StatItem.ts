@@ -1,6 +1,11 @@
 import styled from 'styled-components';
 
-const Wrapper = styled.article`
+interface WrapperProps {
+  color: string;
+  bcg: string;
+}
+
+const Wrapper = styled.article<WrapperProps>`
   padding: 2rem;
   background: var(--background-secondary-color);
   border-bottom: 5px solid ${(props) => props.color};
@@ -15,7 +20,10 @@ const Wrapper = styled.article`
     display: block;
     font-weight: 700;
     font-size: 50px;
-    color: ${(props) => props.color};
+    color: ${(props) => {
+      console.log('Hi', props.color, props.bcg);
+      return props.color;
+    }};
     line-height: 2;
   }
   .title {

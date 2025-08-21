@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import {
   HomeLayout,
   Register,
@@ -11,15 +11,27 @@ import {
   Stats,
   Profile,
   AllJobs,
-} from "./pages";
+  EditJob,
+} from './pages';
+import { action as registerAction } from './pages/Register';
+import { action as loginAction } from './pages/Login';
+import { action as addJobAction } from './pages/AddJob';
+import { action as editJobAction } from './pages/EditJob';
+import { action as deleteJobAction } from './pages/DeleteJob';
+import { action as profileAction } from './pages/Profile';
+import { loader as dashboardLoader } from './pages/DashboardLayout';
+import { loader as allJobsLoader } from './pages/AllJobs';
+import { loader as editJobLoader } from './pages/EditJob';
+import { loader as adminLoader } from './pages/Admin';
+import { loader as statsLoader } from './pages/Stats';
 
 export const checkDefaultTheme = () => {
-  const isDarkTheme = localStorage.getItem("darkTheme") === "true";
+  const isDarkTheme = localStorage.getItem('darkTheme') === 'true';
   if (isDarkTheme === null) {
-    localStorage.setItem("darkTheme", "false");
+    localStorage.setItem('darkTheme', 'false');
     return false;
   } else {
-    document.body.classList.toggle("dark-theme", isDarkTheme);
+    document.body.classList.toggle('dark-theme', isDarkTheme);
     return isDarkTheme;
   }
 };
@@ -28,7 +40,7 @@ checkDefaultTheme();
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <HomeLayout />,
     errorElement: <Error />,
     children: [
@@ -37,36 +49,51 @@ const router = createBrowserRouter([
         element: <Landing />,
       },
       {
-        path: "/register",
+        path: '/register',
         element: <Register />,
+        action: registerAction,
       },
       {
-        path: "/login",
+        path: '/login',
         element: <Login />,
+        action: loginAction,
       },
       {
-        path: "/dashboard",
+        path: '/dashboard',
         element: <DashboardLayout />,
+        loader: dashboardLoader,
         children: [
           {
             index: true,
             element: <AddJob />,
+            action: addJobAction,
           },
           {
-            path: "stats",
+            path: 'stats',
             element: <Stats />,
+            loader: statsLoader,
           },
           {
-            path: "all-jobs",
+            path: 'all-jobs',
             element: <AllJobs />,
+            loader: allJobsLoader,
           },
           {
-            path: "profile",
+            path: 'edit-job/:id',
+            element: <EditJob />,
+            loader: editJobLoader,
+            action: editJobAction,
+          },
+          { path: 'delete-job/:id', action: deleteJobAction },
+          {
+            path: 'profile',
             element: <Profile />,
+            action: profileAction,
           },
           {
-            path: "admin",
+            path: 'admin',
             element: <Admin />,
+            loader: adminLoader,
           },
         ],
       },
